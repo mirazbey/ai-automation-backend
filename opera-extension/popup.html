@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fırsat Avcısı</title>
+    <style>
+        body {
+            width: 300px;
+            height: 400px;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 300;
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .status.healthy {
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+        }
+        
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .quick-actions h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .action-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .footer button {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 0 5px;
+        }
+        
+        .footer button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Fırsat Avcısı</h1>
+    </div>
+    
+    <div id="status" class="status">
+        <div id="statusText">Durum kontrol ediliyor...</div>
+    </div>
+    
+    <div class="quick-actions">
+        <h3>Hızlı İşlemler</h3>
+        <button class="action-btn" id="openSidebar">📋 Sidebar'ı Aç</button>
+        <button class="action-btn" id="currentPageAnalyze">🔍 Bu Sayfayı Analiz Et</button>
+        <button class="action-btn" id="quickSearch">🔎 Hızlı Arama</button>
+        <button class="action-btn" id="automate">🤖 Otomasyon Başlat</button>
+    </div>
+    
+    <div class="footer">
+        <button id="settings">⚙️ Ayarlar</button>
+        <button id="help">❓ Yardım</button>
+        <button id="about">ℹ️ Hakkında</button>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
+

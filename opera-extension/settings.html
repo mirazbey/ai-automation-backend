@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayarlar - Fırsat Avcısı</title>
+    <style>
+        body {
+            width: 400px;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .setting-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .setting-item label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .setting-item input[type="text"],
+        .setting-item input[type="number"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 14px;
+        }
+        .setting-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .button-group button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin: 0 10px;
+        }
+        .button-group button:hover {
+            background: #45a049;
+        }
+        .status-message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status-message.success {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        .status-message.error {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ayarlar</h1>
+
+    <div class="setting-item">
+        <label for="apiUrl">Backend API URL:</label>
+        <input type="text" id="apiUrl" value="http://localhost:5000/api/automation">
+    </div>
+
+    <div class="setting-item">
+        <label for="autoExecute">Otomatik Görev Çalıştırma:</label>
+        <input type="checkbox" id="autoExecute">
+        <span>(Komut analizinden sonra otomatik çalıştır)</span>
+    </div>
+
+    <div class="setting-item">
+        <label for="notifications">Bildirimleri Göster:</label>
+        <input type="checkbox" id="notifications" checked>
+        <span>(Görev tamamlandığında bildirim göster)</span>
+    </div>
+
+    <div class="button-group">
+        <button id="saveSettings">Ayarları Kaydet</button>
+        <button id="resetSettings">Varsayılanlara Sıfırla</button>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <script src="settings.js"></script>
+</body>
+</html>
+

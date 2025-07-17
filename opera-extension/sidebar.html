@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fırsat Avcısı</title>
+    <style>
+        body {
+            width: 350px;
+            min-height: 500px;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .chat-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 85%;
+        }
+        
+        .user-message {
+            background: rgba(255, 255, 255, 0.2);
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .ai-message {
+            background: rgba(0, 0, 0, 0.2);
+            margin-right: auto;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        #commandInput {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 14px;
+        }
+        
+        #commandInput::placeholder {
+            color: #666;
+        }
+        
+        #sendButton {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        #sendButton:hover {
+            background: #45a049;
+        }
+        
+        #sendButton:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .status.loading {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+        
+        .examples {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .examples h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .example-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        
+        .example-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .settings {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .settings button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 5px;
+        }
+        
+        .settings button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Fırsat Avcısı</h1>
+        <p>AI Destekli Web Otomasyonu</p>
+    </div>
+    
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="ai-message message">
+            Merhaba! Ben Fırsat Avcısı AI'yım. Size web üzerinde nasıl yardımcı olabilirim?
+            <br><br>
+            Örneğin: "Google'da Python tutorial ara" veya "Sahibinden.com'da İstanbul'da kiralık daire bul"
+        </div>
+    </div>
+    
+    <div class="input-container">
+        <input type="text" id="commandInput" placeholder="Ne yapmamı istiyorsunuz?" />
+        <button id="sendButton">Gönder</button>
+    </div>
+    
+    <div class="examples">
+        <h3>Örnek Komutlar:</h3>
+        <div class="example-item" data-command="Google'da Python öğrenme kaynaklarını ara">
+            🔍 Google'da Python öğrenme kaynaklarını ara
+        </div>
+        <div class="example-item" data-command="Hepsiburada'da iPhone 15 ara ve fiyatları listele">
+            📱 Hepsiburada'da iPhone 15 ara
+        </div>
+        <div class="example-item" data-command="Sahibinden.com'da İstanbul Kadıköy'de kiralık daire ara">
+            🏠 Sahibinden'de kiralık daire ara
+        </div>
+        <div class="example-item" data-command="Trendyol'da spor ayakkabı kategorisini incele">
+            👟 Trendyol'da spor ayakkabı ara
+        </div>
+    </div>
+    
+    <div class="settings">
+        <button id="settingsBtn">⚙️ Ayarlar</button>
+        <button id="historyBtn">📋 Geçmiş</button>
+        <button id="helpBtn">❓ Yardım</button>
+    </div>
+    
+    <script src="sidebar.js"></script>
+</body>
+</html>
+
