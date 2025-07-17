@@ -1,8 +1,9 @@
 {
     "manifest_version": 3,
-    "name": "Fırsat Avcısı - AI Automation",
-    "version": "1.0.0",
-    "description": "Gemini AI ile desteklenen web otomasyonu eklentisi",
+    "name": "Opera AI Agent - Gelişmiş Web Otomasyonu",
+    "version": "2.0.0",
+    "description": "Gemini AI ile desteklenen gelişmiş web otomasyonu ve analiz eklentisi",
+    "default_locale": "tr",
     
     "permissions": [
         "activeTab",
@@ -10,41 +11,98 @@
         "scripting",
         "tabs",
         "webNavigation",
-        "background"
+        "background",
+        "alarms",
+        "notifications",
+        "contextMenus",
+        "unlimitedStorage"
     ],
     
     "host_permissions": [
+        "http://127.0.0.1:5000/*",
         "http://localhost:5000/*",
         "https://*/*",
         "http://*/*"
     ],
     
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
             "js": ["content.js"],
-            "run_at": "document_end"
+            "run_at": "document_end",
+            "all_frames": false
         }
     ],
     
     "action": {
         "default_popup": "popup.html",
-        "default_title": "Fırsat Avcısı"
+        "default_title": "Opera AI Agent",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
     },
     
     "sidebar_action": {
-        "default_title": "Fırsat Avcısı",
-        "default_panel": "sidebar.html"
+        "default_title": "Opera AI Agent",
+        "default_panel": "sidebar.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png"
+        }
     },
+    
+    "side_panel": {
+        "default_path": "sidebar.html"
+    },
+    
+    "options_page": "settings.html",
     
     "icons": {
         "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
         "48": "icons/icon48.png",
         "128": "icons/icon128.png"
+    },
+    
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "icons/*.png",
+                "sidebar.html",
+                "settings.html",
+                "popup.html"
+            ],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    
+    "commands": {
+        "analyze-page": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+A"
+            },
+            "description": "Mevcut sayfayı analiz et"
+        },
+        "quick-search": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+S"
+            },
+            "description": "Hızlı arama yap"
+        },
+        "show-history": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+H"
+            },
+            "description": "Görev geçmişini göster"
+        }
     }
 }
 

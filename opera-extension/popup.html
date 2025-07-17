@@ -3,118 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fırsat Avcısı</title>
+    <title>Opera AI Agent</title>
     <style>
-        body {
-            width: 300px;
-            height: 400px;
+        * {
             margin: 0;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 380px;
+            min-height: 500px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            overflow-x: hidden;
         }
         
         .header {
+            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 300;
-        }
-        
-        .status {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            text-align: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .status.healthy {
-            background: rgba(76, 175, 80, 0.2);
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
         
-        .status.error {
-            background: rgba(244, 67, 54, 0.2);
-        }
-        
-        .quick-actions {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .quick-actions h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-        }
-        
-        .action-btn {
-            display: block;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
-        }
-        
-        .action-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        .footer {
-            text-align: center;
+        .subtitle {
             font-size: 12px;
             opacity: 0.8;
         }
         
-        .footer button {
-            background: none;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 11px;
-            margin: 0 5px;
+        .status {
+            margin: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .footer button:hover {
+        .status.healthy {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: rgba(40, 167, 69, 0.4);
+        }
+        
+        .status.loading {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+        }
+        
+        .status.error {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+        
+        .main-actions {
+            padding: 20px;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .action-btn {
+            padding: 15px 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .action-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .action-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-btn .icon {
+            font-size: 18px;
+        }
+        
+        .quick-tasks {
+            margin-top: 20px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .quick-task-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 6px;
             background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            text-align: left;
+        }
+        
+        .quick-task-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .quick-task-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .recent-tasks {
+            margin-top: 15px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .recent-task {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .recent-task:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .recent-task.completed {
+            border-left-color: #28a745;
+        }
+        
+        .recent-task.failed {
+            border-left-color: #dc3545;
+        }
+        
+        .task-command {
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            line-height: 1.3;
+        }
+        
+        .task-status {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+        
+        .footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .footer-actions {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+        
+        .footer-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .footer-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .refresh-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(180deg);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
 <body>
+    <button id="refreshStatus" class="refresh-btn" title="Durumu Yenile">🔄</button>
+    
     <div class="header">
-        <h1>🎯 Fırsat Avcısı</h1>
+        <div class="logo">🎯 Opera AI Agent</div>
+        <div class="subtitle">Gelişmiş Web Otomasyonu</div>
     </div>
     
-    <div id="status" class="status">
-        <div id="statusText">Durum kontrol ediliyor...</div>
+    <div id="status" class="status loading">
+        <span id="statusText">🔍 Sistem durumu kontrol ediliyor...</span>
     </div>
     
-    <div class="quick-actions">
-        <h3>Hızlı İşlemler</h3>
-        <button class="action-btn" id="openSidebar">📋 Sidebar'ı Aç</button>
-        <button class="action-btn" id="currentPageAnalyze">🔍 Bu Sayfayı Analiz Et</button>
-        <button class="action-btn" id="quickSearch">🔎 Hızlı Arama</button>
-        <button class="action-btn" id="automate">🤖 Otomasyon Başlat</button>
+    <div class="main-actions">
+        <div class="action-grid">
+            <button id="openSidebar" class="action-btn disabled">
+                <span class="icon">📋</span>
+                <span>Sidebar Aç</span>
+            </button>
+            
+            <button id="currentPageAnalyze" class="action-btn disabled">
+                <span class="icon">📊</span>
+                <span>Sayfa Analizi</span>
+            </button>
+            
+            <button id="quickSearch" class="action-btn disabled">
+                <span class="icon">🔍</span>
+                <span>Hızlı Arama</span>
+            </button>
+            
+            <button id="automate" class="action-btn disabled">
+                <span class="icon">🤖</span>
+                <span>Otomasyon</span>
+            </button>
+        </div>
+        
+        <div class="quick-tasks">
+            <div class="section-title">Hızlı Görevler</div>
+            
+            <button id="quickTaskShopping" class="quick-task-btn disabled">
+                🛒 E-ticaret Araştırması
+            </button>
+            
+            <button id="quickTaskNews" class="quick-task-btn disabled">
+                📰 Teknoloji Haberleri
+            </button>
+            
+            <button id="quickTaskWeather" class="quick-task-btn disabled">
+                🌤️ Hava Durumu
+            </button>
+        </div>
+        
+        <div id="recentTasks" class="recent-tasks">
+            <!-- Recent tasks will be loaded here -->
+        </div>
     </div>
     
     <div class="footer">
-        <button id="settings">⚙️ Ayarlar</button>
-        <button id="help">❓ Yardım</button>
-        <button id="about">ℹ️ Hakkında</button>
+        <div class="footer-actions">
+            <button id="settings" class="footer-btn">⚙️ Ayarlar</button>
+            <button id="history" class="footer-btn">📋 Geçmiş</button>
+            <button id="help" class="footer-btn">❓ Yardım</button>
+            <button id="about" class="footer-btn">ℹ️ Hakkında</button>
+        </div>
     </div>
     
     <script src="popup.js"></script>

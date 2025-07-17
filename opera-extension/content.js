@@ -1,479 +1,389 @@
-// Content Script - Web sayfalarına enjekte edilir
-class AutomationContentScript {
+// Content Script - Opera AI Agent
+// Bu script her web sayfasına enjekte edilir ve sayfa ile etkileşim sağlar
+
+class OperaAIContentScript {
     constructor() {
-        this.isInitialized = false;
-        this.automationOverlay = null;
+        this.isInjected = false;
+        this.highlightedElements = [];
         this.init();
     }
     
     init() {
-        if (this.isInitialized) return;
-        
-        // Sayfa yüklendikten sonra başlat
+        // Sayfa tamamen yüklendiğinde çalıştır
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.setup());
+            document.addEventListener('DOMContentLoaded', () => this.onPageReady());
         } else {
-            this.setup();
+            this.onPageReady();
         }
         
-        this.isInitialized = true;
-    }
-    
-    setup() {
-        this.createAutomationOverlay();
-        this.setupMessageListener();
-        this.detectPageType();
-        this.addKeyboardShortcuts();
-    }
-    
-    createAutomationOverlay() {
-        // Floating action button oluştur
-        const fab = document.createElement('div');
-        fab.id = 'firsat-avcisi-fab';
-        fab.innerHTML = '🎯';
-        fab.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 10000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-            opacity: 0.8;
-        `;
-        
-        fab.addEventListener('mouseenter', () => {
-            fab.style.transform = 'scale(1.1)';
-            fab.style.opacity = '1';
-        });
-        
-        fab.addEventListener('mouseleave', () => {
-            fab.style.transform = 'scale(1)';
-            fab.style.opacity = '0.8';
-        });
-        
-        fab.addEventListener('click', () => this.toggleQuickActions());
-        
-        document.body.appendChild(fab);
-        
-        // Quick actions menüsü
-        this.createQuickActionsMenu();
-    }
-    
-    createQuickActionsMenu() {
-        const menu = document.createElement('div');
-        menu.id = 'firsat-avcisi-quick-menu';
-        menu.style.cssText = `
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            background: white;
-            border-radius: 15px;
-            padding: 15px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            z-index: 10001;
-            display: none;
-            min-width: 250px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        `;
-        
-        const currentDomain = window.location.hostname;
-        let quickActions = this.getQuickActionsForSite(currentDomain);
-        
-        menu.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 10px; color: #333;">
-                🎯 Hızlı İşlemler
-            </div>
-            ${quickActions.map(action => `
-                <div class="quick-action" data-action="${action.command}" style="
-                    padding: 8px 12px;
-                    margin: 5px 0;
-                    background: #f5f5f5;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: background 0.3s;
-                    font-size: 14px;
-                ">
-                    ${action.icon} ${action.label}
-                </div>
-            `).join('')}
-            <div style="border-top: 1px solid #eee; margin: 10px 0; padding-top: 10px;">
-                <input type="text" id="custom-command" placeholder="Özel komut yazın..." style="
-                    width: 100%;
-                    padding: 8px;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                    font-size: 14px;
-                    margin-bottom: 8px;
-                ">
-                <button id="execute-custom" style="
-                    width: 100%;
-                    padding: 8px;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 14px;
-                ">Çalıştır</button>
-            </div>
-        `;
-        
-        // Event listeners
-        menu.querySelectorAll('.quick-action').forEach(action => {
-            action.addEventListener('mouseenter', (e) => {
-                e.target.style.background = '#e0e0e0';
-            });
-            action.addEventListener('mouseleave', (e) => {
-                e.target.style.background = '#f5f5f5';
-            });
-            action.addEventListener('click', (e) => {
-                const command = e.target.getAttribute('data-action');
-                this.executeCommand(command);
-                this.hideQuickActions();
-            });
-        });
-        
-        menu.querySelector('#execute-custom').addEventListener('click', () => {
-            const command = menu.querySelector('#custom-command').value.trim();
-            if (command) {
-                this.executeCommand(command);
-                this.hideQuickActions();
-            }
-        });
-        
-        menu.querySelector('#custom-command').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                menu.querySelector('#execute-custom').click();
-            }
-        });
-        
-        document.body.appendChild(menu);
-        this.quickActionsMenu = menu;
-    }
-    
-    getQuickActionsForSite(domain) {
-        const commonActions = [
-            { icon: '🔍', label: 'Bu sayfada ara', command: `Bu sayfada "${window.location.href}" arama yap` },
-            { icon: '📋', label: 'Sayfa bilgilerini topla', command: `Bu sayfadaki "${window.location.href}" tüm önemli bilgileri topla` }
-        ];
-        
-        if (domain.includes('google.com')) {
-            return [
-                { icon: '🔍', label: 'Python tutorial ara', command: 'Google\'da Python tutorial ara' },
-                { icon: '📚', label: 'JavaScript öğrenme kaynakları', command: 'Google\'da JavaScript öğrenme kaynakları ara' },
-                { icon: '💼', label: 'İş ilanları ara', command: 'Google\'da yazılım geliştirici iş ilanları ara' },
-                ...commonActions
-            ];
-        } else if (domain.includes('sahibinden.com')) {
-            return [
-                { icon: '🏠', label: 'Kiralık daire ara', command: 'Sahibinden.com\'da İstanbul\'da kiralık daire ara' },
-                { icon: '🚗', label: 'Araba ara', command: 'Sahibinden.com\'da 2020 model üstü araba ara' },
-                { icon: '📱', label: 'Telefon ara', command: 'Sahibinden.com\'da iPhone ara' },
-                ...commonActions
-            ];
-        } else if (domain.includes('hepsiburada.com')) {
-            return [
-                { icon: '📱', label: 'Telefon ara', command: 'Hepsiburada\'da iPhone 15 ara' },
-                { icon: '💻', label: 'Laptop ara', command: 'Hepsiburada\'da laptop ara ve fiyatları karşılaştır' },
-                { icon: '🎮', label: 'Oyun ara', command: 'Hepsiburada\'da PlayStation oyunları ara' },
-                ...commonActions
-            ];
-        } else if (domain.includes('trendyol.com')) {
-            return [
-                { icon: '👕', label: 'Giyim ara', command: 'Trendyol\'da erkek gömlek ara' },
-                { icon: '👟', label: 'Ayakkabı ara', command: 'Trendyol\'da spor ayakkabı ara' },
-                { icon: '🏠', label: 'Ev dekorasyonu', command: 'Trendyol\'da ev dekorasyon ürünleri ara' },
-                ...commonActions
-            ];
-        }
-        
-        return commonActions;
-    }
-    
-    toggleQuickActions() {
-        if (this.quickActionsMenu.style.display === 'none') {
-            this.showQuickActions();
-        } else {
-            this.hideQuickActions();
-        }
-    }
-    
-    showQuickActions() {
-        this.quickActionsMenu.style.display = 'block';
-        this.quickActionsMenu.style.animation = 'fadeInUp 0.3s ease';
-        
-        // Dışarı tıklandığında kapat
-        setTimeout(() => {
-            document.addEventListener('click', this.handleOutsideClick.bind(this));
-        }, 100);
-    }
-    
-    hideQuickActions() {
-        this.quickActionsMenu.style.display = 'none';
-        document.removeEventListener('click', this.handleOutsideClick.bind(this));
-    }
-    
-    handleOutsideClick(e) {
-        if (!this.quickActionsMenu.contains(e.target) && 
-            !document.getElementById('firsat-avcisi-fab').contains(e.target)) {
-            this.hideQuickActions();
-        }
-    }
-    
-    setupMessageListener() {
+        // Background script'ten mesajları dinle
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            switch (message.type) {
-                case 'HIGHLIGHT_ELEMENTS':
-                    this.highlightElements(message.selector);
-                    break;
-                case 'CLICK_ELEMENT':
-                    this.clickElement(message.selector);
-                    break;
-                case 'TYPE_TEXT':
-                    this.typeText(message.selector, message.text);
-                    break;
-                case 'SCRAPE_DATA':
-                    const data = this.scrapeData(message.selector);
-                    sendResponse(data);
-                    break;
-                case 'GET_PAGE_INFO':
-                    const pageInfo = this.getPageInfo();
-                    sendResponse(pageInfo);
-                    break;
-            }
+            this.handleMessage(message, sender, sendResponse);
+            return true; // Async response için
         });
     }
     
-    detectPageType() {
-        const domain = window.location.hostname;
-        const pageType = this.identifyPageType(domain);
+    onPageReady() {
+        this.isInjected = true;
+        console.log('🎯 Opera AI Agent Content Script yüklendi:', window.location.href);
         
-        // Background script'e sayfa tipini bildir
-        chrome.runtime.sendMessage({
-            type: 'PAGE_DETECTED',
-            domain: domain,
-            pageType: pageType,
-            url: window.location.href,
-            title: document.title
-        });
+        // Sayfa bilgilerini background script'e gönder
+        this.reportPageInfo();
+        
+        // Klavye kısayollarını dinle
+        this.setupKeyboardShortcuts();
+        
+        // Sayfa değişikliklerini izle (SPA'lar için)
+        this.observePageChanges();
     }
     
-    identifyPageType(domain) {
-        if (domain.includes('google.com')) return 'search_engine';
-        if (domain.includes('sahibinden.com')) return 'classified_ads';
-        if (domain.includes('hepsiburada.com') || domain.includes('trendyol.com')) return 'ecommerce';
-        if (domain.includes('youtube.com')) return 'video_platform';
-        if (domain.includes('linkedin.com')) return 'social_professional';
-        if (domain.includes('facebook.com') || domain.includes('twitter.com')) return 'social_media';
-        return 'general';
-    }
-    
-    addKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Ctrl + Shift + A: Hızlı işlemler menüsünü aç
-            if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-                e.preventDefault();
-                this.toggleQuickActions();
-            }
-            
-            // Ctrl + Shift + S: Sayfa bilgilerini topla
-            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
-                e.preventDefault();
-                this.executeCommand('Bu sayfadaki tüm önemli bilgileri topla ve özetle');
-            }
-        });
-    }
-    
-    async executeCommand(command) {
+    handleMessage(message, sender, sendResponse) {
         try {
-            // Loading indicator göster
-            this.showLoadingIndicator();
-            
-            // Background script'e komutu gönder
-            const response = await chrome.runtime.sendMessage({
-                type: 'EXECUTE_AUTOMATION',
-                command: command
-            });
-            
-            if (response.success) {
-                this.showSuccessNotification('Görev başarıyla tamamlandı!');
-            } else {
-                this.showErrorNotification(`Hata: ${response.error}`);
+            switch (message.type) {
+                case 'GET_PAGE_INFO':
+                    sendResponse(this.getPageInfo());
+                    break;
+                    
+                case 'EXTRACT_DATA':
+                    const data = this.extractPageData(message.selectors);
+                    sendResponse({ success: true, data: data });
+                    break;
+                    
+                case 'HIGHLIGHT_ELEMENTS':
+                    this.highlightElements(message.selectors);
+                    sendResponse({ success: true });
+                    break;
+                    
+                case 'REMOVE_HIGHLIGHTS':
+                    this.removeHighlights();
+                    sendResponse({ success: true });
+                    break;
+                    
+                case 'CLICK_ELEMENT':
+                    const clicked = this.clickElement(message.selector);
+                    sendResponse({ success: clicked });
+                    break;
+                    
+                case 'FILL_FORM':
+                    const filled = this.fillForm(message.formData);
+                    sendResponse({ success: filled });
+                    break;
+                    
+                case 'SCROLL_TO':
+                    this.scrollTo(message.position);
+                    sendResponse({ success: true });
+                    break;
+                    
+                case 'TAKE_SCREENSHOT':
+                    // Bu işlem background script tarafından yapılır
+                    sendResponse({ success: false, error: 'Screenshot content script\'te yapılamaz' });
+                    break;
+                    
+                default:
+                    sendResponse({ success: false, error: 'Bilinmeyen mesaj türü' });
             }
         } catch (error) {
-            console.error('Command execution error:', error);
-            this.showErrorNotification('Komut çalıştırılırken hata oluştu');
-        } finally {
-            this.hideLoadingIndicator();
+            console.error('❌ Content script mesaj işleme hatası:', error);
+            sendResponse({ success: false, error: error.message });
         }
     }
     
-    showLoadingIndicator() {
-        const indicator = document.createElement('div');
-        indicator.id = 'firsat-avcisi-loading';
-        indicator.innerHTML = '🎯 İşleniyor...';
-        indicator.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            z-index: 10002;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            animation: pulse 1.5s infinite;
-        `;
+    getPageInfo() {
+        return {
+            url: window.location.href,
+            title: document.title,
+            domain: window.location.hostname,
+            text: document.body.innerText.substring(0, 5000), // İlk 5000 karakter
+            html: document.documentElement.outerHTML.substring(0, 10000), // İlk 10000 karakter
+            links: this.extractLinks(),
+            images: this.extractImages(),
+            forms: this.extractForms(),
+            buttons: this.extractButtons(),
+            inputs: this.extractInputs(),
+            metadata: this.extractMetadata(),
+            timestamp: Date.now()
+        };
+    }
+    
+    extractLinks() {
+        const links = Array.from(document.querySelectorAll('a[href]'));
+        return links.slice(0, 50).map(link => ({
+            text: link.textContent.trim().substring(0, 100),
+            href: link.href,
+            title: link.title || '',
+            target: link.target || ''
+        }));
+    }
+    
+    extractImages() {
+        const images = Array.from(document.querySelectorAll('img[src]'));
+        return images.slice(0, 20).map(img => ({
+            src: img.src,
+            alt: img.alt || '',
+            title: img.title || '',
+            width: img.width || 0,
+            height: img.height || 0
+        }));
+    }
+    
+    extractForms() {
+        const forms = Array.from(document.querySelectorAll('form'));
+        return forms.slice(0, 10).map((form, index) => ({
+            id: form.id || `form_${index}`,
+            action: form.action || '',
+            method: form.method || 'GET',
+            inputs: Array.from(form.querySelectorAll('input, select, textarea')).map(input => ({
+                name: input.name || '',
+                type: input.type || '',
+                placeholder: input.placeholder || '',
+                required: input.required || false
+            }))
+        }));
+    }
+    
+    extractButtons() {
+        const buttons = Array.from(document.querySelectorAll('button, input[type="button"], input[type="submit"]'));
+        return buttons.slice(0, 30).map((button, index) => ({
+            id: button.id || `button_${index}`,
+            text: button.textContent?.trim() || button.value || '',
+            type: button.type || '',
+            className: button.className || ''
+        }));
+    }
+    
+    extractInputs() {
+        const inputs = Array.from(document.querySelectorAll('input, select, textarea'));
+        return inputs.slice(0, 30).map((input, index) => ({
+            id: input.id || `input_${index}`,
+            name: input.name || '',
+            type: input.type || '',
+            placeholder: input.placeholder || '',
+            value: input.value || '',
+            required: input.required || false
+        }));
+    }
+    
+    extractMetadata() {
+        const meta = {};
         
-        document.body.appendChild(indicator);
-    }
-    
-    hideLoadingIndicator() {
-        const indicator = document.getElementById('firsat-avcisi-loading');
-        if (indicator) {
-            indicator.remove();
-        }
-    }
-    
-    showSuccessNotification(message) {
-        this.showNotification(message, '#4CAF50');
-    }
-    
-    showErrorNotification(message) {
-        this.showNotification(message, '#f44336');
-    }
-    
-    showNotification(message, color) {
-        const notification = document.createElement('div');
-        notification.innerHTML = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: ${color};
-            color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
-            z-index: 10002;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            max-width: 300px;
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // 3 saniye sonra kaldır
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    }
-    
-    highlightElements(selector) {
-        // Önceki highlight'ları temizle
-        document.querySelectorAll('.firsat-avcisi-highlight').forEach(el => {
-            el.classList.remove('firsat-avcisi-highlight');
+        // Meta tags
+        document.querySelectorAll('meta').forEach(tag => {
+            const name = tag.getAttribute('name') || tag.getAttribute('property');
+            const content = tag.getAttribute('content');
+            if (name && content) {
+                meta[name] = content;
+            }
         });
         
-        // Yeni elementleri highlight et
-        document.querySelectorAll(selector).forEach(el => {
-            el.classList.add('firsat-avcisi-highlight');
-            el.style.outline = '3px solid #4CAF50';
-            el.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
-        });
-    }
-    
-    clickElement(selector) {
-        const element = document.querySelector(selector);
-        if (element) {
-            element.click();
-            return true;
-        }
-        return false;
-    }
-    
-    typeText(selector, text) {
-        const element = document.querySelector(selector);
-        if (element) {
-            element.focus();
-            element.value = text;
-            element.dispatchEvent(new Event('input', { bubbles: true }));
-            element.dispatchEvent(new Event('change', { bubbles: true }));
-            return true;
-        }
-        return false;
-    }
-    
-    scrapeData(selector) {
-        const elements = document.querySelectorAll(selector);
-        const data = [];
+        // Title ve description
+        meta.title = document.title;
+        meta.description = document.querySelector('meta[name="description"]')?.content || '';
         
-        elements.forEach(el => {
-            data.push({
-                text: el.textContent.trim(),
-                html: el.innerHTML,
-                href: el.href || null,
-                src: el.src || null,
-                className: el.className,
-                id: el.id
-            });
+        return meta;
+    }
+    
+    extractPageData(selectors = {}) {
+        const data = {};
+        
+        // Varsayılan selectors
+        const defaultSelectors = {
+            prices: '[class*="price"], [class*="fiyat"], .price, .fiyat',
+            titles: 'h1, h2, h3, [class*="title"], [class*="baslik"]',
+            descriptions: '[class*="description"], [class*="aciklama"], p',
+            products: '[class*="product"], [class*="urun"], .product-item',
+            ...selectors
+        };
+        
+        Object.keys(defaultSelectors).forEach(key => {
+            const elements = document.querySelectorAll(defaultSelectors[key]);
+            data[key] = Array.from(elements).slice(0, 20).map(el => ({
+                text: el.textContent?.trim().substring(0, 200) || '',
+                html: el.outerHTML.substring(0, 500),
+                attributes: this.getElementAttributes(el)
+            }));
         });
         
         return data;
     }
     
-    getPageInfo() {
-        return {
-            title: document.title,
-            url: window.location.href,
-            domain: window.location.hostname,
-            description: document.querySelector('meta[name="description"]')?.content || '',
-            keywords: document.querySelector('meta[name="keywords"]')?.content || '',
-            images: Array.from(document.querySelectorAll('img')).slice(0, 10).map(img => ({
-                src: img.src,
-                alt: img.alt
-            })),
-            links: Array.from(document.querySelectorAll('a')).slice(0, 20).map(link => ({
-                href: link.href,
-                text: link.textContent.trim()
-            }))
-        };
+    getElementAttributes(element) {
+        const attrs = {};
+        Array.from(element.attributes).forEach(attr => {
+            attrs[attr.name] = attr.value;
+        });
+        return attrs;
+    }
+    
+    highlightElements(selectors) {
+        this.removeHighlights(); // Önceki highlight'ları temizle
+        
+        if (typeof selectors === 'string') {
+            selectors = [selectors];
+        }
+        
+        selectors.forEach(selector => {
+            try {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    element.style.outline = '3px solid #ff6b6b';
+                    element.style.backgroundColor = 'rgba(255, 107, 107, 0.1)';
+                    element.setAttribute('data-ai-highlighted', 'true');
+                    this.highlightedElements.push(element);
+                });
+            } catch (error) {
+                console.error('❌ Highlight hatası:', selector, error);
+            }
+        });
+    }
+    
+    removeHighlights() {
+        this.highlightedElements.forEach(element => {
+            element.style.outline = '';
+            element.style.backgroundColor = '';
+            element.removeAttribute('data-ai-highlighted');
+        });
+        this.highlightedElements = [];
+    }
+    
+    clickElement(selector) {
+        try {
+            const element = document.querySelector(selector);
+            if (element) {
+                // Scroll to element first
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Wait a bit then click
+                setTimeout(() => {
+                    element.click();
+                }, 500);
+                
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('❌ Element tıklama hatası:', error);
+            return false;
+        }
+    }
+    
+    fillForm(formData) {
+        try {
+            let filled = 0;
+            
+            Object.keys(formData).forEach(key => {
+                const value = formData[key];
+                
+                // Name, id veya placeholder ile input bul
+                let input = document.querySelector(`input[name="${key}"]`) ||
+                           document.querySelector(`#${key}`) ||
+                           document.querySelector(`input[placeholder*="${key}"]`) ||
+                           document.querySelector(`textarea[name="${key}"]`) ||
+                           document.querySelector(`select[name="${key}"]`);
+                
+                if (input) {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = Boolean(value);
+                    } else {
+                        input.value = value;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    filled++;
+                }
+            });
+            
+            return filled > 0;
+        } catch (error) {
+            console.error('❌ Form doldurma hatası:', error);
+            return false;
+        }
+    }
+    
+    scrollTo(position) {
+        if (typeof position === 'number') {
+            window.scrollTo({ top: position, behavior: 'smooth' });
+        } else if (position === 'top') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (position === 'bottom') {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        } else if (typeof position === 'string') {
+            // CSS selector olarak kullan
+            const element = document.querySelector(position);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+    
+    reportPageInfo() {
+        // Sayfa bilgilerini background script'e gönder
+        chrome.runtime.sendMessage({
+            type: 'PAGE_INFO_UPDATE',
+            pageInfo: this.getPageInfo()
+        }).catch(error => {
+            // Background script henüz hazır değilse hata vermez
+            console.log('Background script henüz hazır değil:', error.message);
+        });
+    }
+    
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (event) => {
+            // Ctrl+Shift+A: Sayfa analizi
+            if (event.ctrlKey && event.shiftKey && event.key === 'A') {
+                event.preventDefault();
+                chrome.runtime.sendMessage({ type: 'ANALYZE_CURRENT_PAGE' });
+            }
+            
+            // Ctrl+Shift+S: Hızlı arama
+            if (event.ctrlKey && event.shiftKey && event.key === 'S') {
+                event.preventDefault();
+                const searchTerm = prompt('🔍 Aranacak terimi girin:');
+                if (searchTerm) {
+                    chrome.runtime.sendMessage({ 
+                        type: 'EXECUTE_AUTOMATION',
+                        command: `Google'da "${searchTerm}" ara`
+                    });
+                }
+            }
+            
+            // Ctrl+Shift+H: Geçmiş
+            if (event.ctrlKey && event.shiftKey && event.key === 'H') {
+                event.preventDefault();
+                chrome.runtime.sendMessage({ type: 'SHOW_HISTORY' });
+            }
+        });
+    }
+    
+    observePageChanges() {
+        // SPA'larda sayfa değişikliklerini izle
+        const observer = new MutationObserver((mutations) => {
+            let significantChange = false;
+            
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Yeni DOM elementleri eklendi
+                    significantChange = true;
+                }
+            });
+            
+            if (significantChange) {
+                // Debounce: 1 saniye bekle
+                clearTimeout(this.reportTimeout);
+                this.reportTimeout = setTimeout(() => {
+                    this.reportPageInfo();
+                }, 1000);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
     }
 }
 
-// CSS animasyonları ekle
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-`;
-document.head.appendChild(style);
-
 // Content script'i başlat
-new AutomationContentScript();
+const operaAIContentScript = new OperaAIContentScript();
+
+console.log('🚀 Opera AI Agent Content Script başlatıldı');
 

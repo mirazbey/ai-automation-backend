@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Fırsat Avcısı - AI Agent & Otomasyon",
+  "version": "3.0",
+  "description": "Opera uyumlu AI agent sistemi ile web otomasyonu ve sayfa analizi. Nanobrowser benzeri multi-agent yapı.",
+  "default_locale": "tr",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "background"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script-nanobrowser-style.js"],
+      "css": [],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Fırsat Avcısı",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
+

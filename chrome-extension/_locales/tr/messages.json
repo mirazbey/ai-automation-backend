@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "Fırsat Avcısı - AI Otomasyonu",
+    "description": "Eklentinin adı"
+  },
+  "extensionDescription": {
+    "message": "AI destekli web otomasyon eklentisi. Görünür modda çalışır ve kalıcı sidebar ile sonuçları gösterir.",
+    "description": "Eklentinin açıklaması"
+  }
+}
+

@@ -1,0 +1,51 @@
+{
+    "extensionName": {
+        "message": "Fırsat Avcısı - AI Automation",
+        "description": "Extension name"
+    },
+    "extensionDescription": {
+        "message": "Gemini AI ile desteklenen web otomasyonu eklentisi",
+        "description": "Extension description"
+    },
+    "popupTitle": {
+        "message": "Fırsat Avcısı",
+        "description": "Popup title"
+    },
+    "sidebarTitle": {
+        "message": "Fırsat Avcısı",
+        "description": "Sidebar title"
+    },
+    "quickActions": {
+        "message": "Hızlı İşlemler",
+        "description": "Quick actions section title"
+    },
+    "openSidebar": {
+        "message": "Kontrol Panelini Aç",
+        "description": "Open sidebar button"
+    },
+    "analyzeCurrentPage": {
+        "message": "Bu Sayfayı Analiz Et",
+        "description": "Analyze current page button"
+    },
+    "quickSearch": {
+        "message": "Hızlı Arama",
+        "description": "Quick search button"
+    },
+    "startAutomation": {
+        "message": "Otomasyon Başlat",
+        "description": "Start automation button"
+    },
+    "settings": {
+        "message": "Ayarlar",
+        "description": "Settings button"
+    },
+    "help": {
+        "message": "Yardım",
+        "description": "Help button"
+    },
+    "about": {
+        "message": "Hakkında",
+        "description": "About button"
+    }
+}
+

@@ -1,8 +1,11 @@
-// Background Service Worker
-const API_BASE_URL = 'http://localhost:5000/api/automation';
+// Geliştirilmiş Background Service Worker - Opera AI Agent
+const API_BASE_URL = 'http://127.0.0.1:5000/api/automation';
 
-class AutomationBackground {
+class OperaAIAgent {
     constructor() {
+        this.isBackendHealthy = false;
+        this.currentTask = null;
+        this.taskHistory = [];
         this.initializeEventListeners();
         this.checkBackendHealth();
     }
@@ -10,17 +13,17 @@ class AutomationBackground {
     initializeEventListeners() {
         // Extension yüklendiğinde
         chrome.runtime.onInstalled.addListener(() => {
-            console.log('Fırsat Avcısı eklentisi yüklendi');
+            console.log('🎯 Opera AI Agent eklentisi yüklendi');
             this.initializeStorage();
         });
         
-        // Mesaj dinleyicisi
+        // Mesaj dinleyicisi - popup ve sidebar'dan gelen mesajları işle
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             this.handleMessage(message, sender, sendResponse);
             return true; // Async response için
         });
         
-        // Tab güncellendiğinde
+        // Tab güncellendiğinde - sayfa analizi için
         chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             if (changeInfo.status === 'complete' && tab.url) {
                 this.onTabUpdated(tabId, tab);
@@ -31,11 +34,14 @@ class AutomationBackground {
         chrome.alarms.onAlarm.addListener((alarm) => {
             this.handleAlarm(alarm);
         });
+        
+        // Context menu oluştur
+        this.createContextMenus();
     }
     
     async initializeStorage() {
         try {
-            const storage = await chrome.storage.local.get(['settings', 'chatHistory']);
+            const storage = await chrome.storage.local.get(['settings', 'chatHistory', 'taskHistory']);
             
             if (!storage.settings) {
                 await chrome.storage.local.set({
@@ -43,7 +49,9 @@ class AutomationBackground {
                         apiUrl: API_BASE_URL,
                         autoExecute: false,
                         notifications: true,
-                        theme: 'dark'
+                        theme: 'dark',
+                        maxRetries: 3,
+                        timeout: 30000
                     }
                 });
             }
@@ -51,256 +59,379 @@ class AutomationBackground {
             if (!storage.chatHistory) {
                 await chrome.storage.local.set({ chatHistory: [] });
             }
+            
+            if (!storage.taskHistory) {
+                await chrome.storage.local.set({ taskHistory: [] });
+            }
+            
+            console.log('✅ Storage başlatıldı');
         } catch (error) {
-            console.error('Storage initialization error:', error);
+            console.error('❌ Storage başlatma hatası:', error);
         }
+    }
+    
+    createContextMenus() {
+        chrome.contextMenus.create({
+            id: 'analyze-page',
+            title: 'Bu Sayfayı AI ile Analiz Et',
+            contexts: ['page']
+        });
+        
+        chrome.contextMenus.create({
+            id: 'extract-data',
+            title: 'Sayfa Verilerini Çıkar',
+            contexts: ['page']
+        });
+        
+        chrome.contextMenus.onClicked.addListener((info, tab) => {
+            this.handleContextMenu(info, tab);
+        });
     }
     
     async handleMessage(message, sender, sendResponse) {
         try {
+            console.log('📨 Mesaj alındı:', message.type);
+            
             switch (message.type) {
+                case 'HEALTH_CHECK':
+                    const healthStatus = await this.checkBackendHealth();
+                    sendResponse({ 
+                        healthy: healthStatus,
+                        timestamp: Date.now(),
+                        version: '2.0.0'
+                    });
+                    break;
+                    
                 case 'EXECUTE_AUTOMATION':
-                    const result = await this.executeAutomation(message.command);
+                    const result = await this.executeAutomation(message.command, sender.tab);
                     sendResponse(result);
                     break;
                     
-                case 'AUTOMATION_RESULT':
-                    await this.handleAutomationResult(message.data);
-                    sendResponse({ success: true });
+                case 'ANALYZE_CURRENT_PAGE':
+                    const analysis = await this.analyzeCurrentPage(sender.tab);
+                    sendResponse(analysis);
                     break;
                     
-                case 'GET_SETTINGS':
-                    const settings = await this.getSettings();
-                    sendResponse(settings);
+                case 'OPEN_NEW_TAB':
+                    const newTab = await this.openNewTab(message.url);
+                    sendResponse({ success: true, tabId: newTab.id });
                     break;
                     
-                case 'UPDATE_SETTINGS':
-                    await this.updateSettings(message.settings);
-                    sendResponse({ success: true });
+                case 'GET_PAGE_CONTENT':
+                    const content = await this.getPageContent(message.tabId);
+                    sendResponse(content);
                     break;
                     
-                case 'HEALTH_CHECK':
-                    const health = await this.checkBackendHealth();
-                    sendResponse(health);
+                case 'INJECT_SCRIPT':
+                    const scriptResult = await this.injectScript(message.tabId, message.script);
+                    sendResponse(scriptResult);
+                    break;
+                    
+                case 'GET_TASK_HISTORY':
+                    const history = await this.getTaskHistory();
+                    sendResponse(history);
                     break;
                     
                 default:
-                    sendResponse({ error: 'Unknown message type' });
+                    sendResponse({ error: 'Bilinmeyen mesaj türü: ' + message.type });
             }
         } catch (error) {
-            console.error('Message handling error:', error);
-            sendResponse({ error: error.message });
-        }
-    }
-    
-    async executeAutomation(command) {
-        try {
-            const settings = await this.getSettings();
-            
-            const response = await fetch(`${settings.apiUrl}/full-automation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ command })
+            console.error('❌ Mesaj işleme hatası:', error);
+            sendResponse({ 
+                error: error.message,
+                timestamp: Date.now()
             });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // Başarılı sonucu bildirim olarak göster
-                if (settings.notifications) {
-                    chrome.notifications.create({
-                        type: 'basic',
-                        iconUrl: 'icons/icon48.png',
-                        title: 'Fırsat Avcısı',
-                        message: 'Görev başarıyla tamamlandı!'
-                    });
-                }
-                
-                // Sonucu kaydet
-                await this.saveAutomationResult(command, data);
-            }
-            
-            return data;
-            
-        } catch (error) {
-            console.error('Automation execution error:', error);
-            return { success: false, error: error.message };
-        }
-    }
-    
-    async handleAutomationResult(data) {
-        try {
-            // Sonuçları analiz et ve kullanıcıya önerilerde bulun
-            if (data.automation_results) {
-                const analysis = await this.analyzeResults(data);
-                
-                // Önemli sonuçları badge olarak göster
-                if (analysis.importantFindings > 0) {
-                    chrome.action.setBadgeText({ text: analysis.importantFindings.toString() });
-                    chrome.action.setBadgeBackgroundColor({ color: '#4CAF50' });
-                }
-            }
-        } catch (error) {
-            console.error('Result handling error:', error);
-        }
-    }
-    
-    async analyzeResults(data) {
-        // Basit sonuç analizi
-        let importantFindings = 0;
-        
-        if (data.automation_results) {
-            data.automation_results.forEach(result => {
-                if (result.includes('Scraped') && result.includes('items')) {
-                    importantFindings++;
-                }
-            });
-        }
-        
-        return { importantFindings };
-    }
-    
-    async onTabUpdated(tabId, tab) {
-        try {
-            // Belirli sitelerde otomatik öneriler sunabilir
-            const url = new URL(tab.url);
-            const domain = url.hostname;
-            
-            // Desteklenen siteler için content script enjekte et
-            const supportedSites = [
-                'sahibinden.com',
-                'hepsiburada.com',
-                'trendyol.com',
-                'google.com',
-                'amazon.com.tr'
-            ];
-            
-            if (supportedSites.some(site => domain.includes(site))) {
-                // Content script'i her zaman enjekte et
-                await chrome.scripting.executeScript({
-                    target: { tabId: tabId },
-                    files: ['content.js']
-                });
-            }
-        } catch (error) {
-            console.error('Tab update handling error:', error);
         }
     }
     
     async checkBackendHealth() {
         try {
-            const settings = await this.getSettings();
-            const response = await fetch(`${settings.apiUrl}/health`);
-            const data = await response.json();
+            console.log('🔍 Backend sağlık kontrolü yapılıyor...');
             
-            if (data.status === 'healthy') {
-                chrome.action.setIcon({ path: 'icons/icon48.png' });
-                return { healthy: true, data };
+            const response = await fetch(`${API_BASE_URL}/health`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(5000) // 5 saniye timeout
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.isBackendHealthy = true;
+                console.log('✅ Backend sağlıklı:', data);
+                return true;
             } else {
-                chrome.action.setIcon({ path: 'icons/icon48-offline.png' });
-                return { healthy: false, error: 'Backend unhealthy' };
+                this.isBackendHealthy = false;
+                console.error('❌ Backend yanıt hatası:', response.status);
+                return false;
             }
         } catch (error) {
-            console.error('Health check error:', error);
-            chrome.action.setIcon({ path: 'icons/icon48-offline.png' });
-            return { healthy: false, error: error.message };
+            this.isBackendHealthy = false;
+            console.error('❌ Backend bağlantı hatası:', error);
+            return false;
         }
     }
     
-    async getSettings() {
+    async executeAutomation(command, currentTab) {
         try {
-            const result = await chrome.storage.local.get(['settings']);
-            return result.settings || {
-                apiUrl: API_BASE_URL,
-                autoExecute: false,
-                notifications: true,
-                theme: 'dark'
-            };
-        } catch (error) {
-            console.error('Settings get error:', error);
-            return {};
-        }
-    }
-    
-    async updateSettings(newSettings) {
-        try {
-            const currentSettings = await this.getSettings();
-            const updatedSettings = { ...currentSettings, ...newSettings };
-            await chrome.storage.local.set({ settings: updatedSettings });
-        } catch (error) {
-            console.error('Settings update error:', error);
-        }
-    }
-    
-    async saveAutomationResult(command, result) {
-        try {
-            const historyItem = {
-                timestamp: Date.now(),
+            if (!this.isBackendHealthy) {
+                throw new Error('Backend servisi sağlıklı değil');
+            }
+            
+            console.log('🤖 Otomasyon başlatılıyor:', command);
+            
+            // Görev geçmişine ekle
+            const taskId = Date.now().toString();
+            this.currentTask = {
+                id: taskId,
                 command: command,
-                result: result,
-                summary: `✅ ${result.task_plan?.task_type || 'Görev'} tamamlandı`
+                startTime: Date.now(),
+                status: 'running',
+                currentTab: currentTab
             };
             
-            const storage = await chrome.storage.local.get(['automationHistory']);
-            const history = storage.automationHistory || [];
-            history.push(historyItem);
+            // Backend'e istek gönder
+            const response = await fetch(`${API_BASE_URL}/full-automation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    command: command,
+                    tabId: currentTab?.id,
+                    taskId: taskId
+                })
+            });
             
-            // Son 100 öğeyi tut
+            if (!response.ok) {
+                throw new Error(`Backend hatası: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // Görev tamamlandı
+            this.currentTask.status = result.success ? 'completed' : 'failed';
+            this.currentTask.endTime = Date.now();
+            this.currentTask.result = result;
+            
+            // Geçmişe kaydet
+            await this.saveTaskToHistory(this.currentTask);
+            
+            // Bildirim gönder
+            if (result.success) {
+                this.showNotification('Görev Tamamlandı', `"${command}" başarıyla gerçekleştirildi`);
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Otomasyon hatası:', error);
+            
+            if (this.currentTask) {
+                this.currentTask.status = 'error';
+                this.currentTask.endTime = Date.now();
+                this.currentTask.error = error.message;
+                await this.saveTaskToHistory(this.currentTask);
+            }
+            
+            return {
+                success: false,
+                error: error.message,
+                timestamp: Date.now()
+            };
+        }
+    }
+    
+    async analyzeCurrentPage(tab) {
+        try {
+            console.log('📊 Sayfa analizi başlatılıyor:', tab.url);
+            
+            // Sayfa içeriğini al
+            const content = await this.getPageContent(tab.id);
+            
+            // Backend'e analiz için gönder
+            const response = await fetch(`${API_BASE_URL}/analyze-page`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: tab.url,
+                    title: tab.title,
+                    content: content.text,
+                    timestamp: Date.now()
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Analiz hatası: ${response.status}`);
+            }
+            
+            const analysis = await response.json();
+            
+            // Analiz sonucunu bildirim olarak göster
+            this.showNotification('Sayfa Analizi Tamamlandı', `${tab.title} analiz edildi`);
+            
+            return {
+                success: true,
+                analysis: analysis,
+                timestamp: Date.now()
+            };
+            
+        } catch (error) {
+            console.error('❌ Sayfa analizi hatası:', error);
+            return {
+                success: false,
+                error: error.message,
+                timestamp: Date.now()
+            };
+        }
+    }
+    
+    async openNewTab(url) {
+        try {
+            const tab = await chrome.tabs.create({
+                url: url,
+                active: true
+            });
+            
+            console.log('🆕 Yeni sekme açıldı:', tab.id, url);
+            return tab;
+            
+        } catch (error) {
+            console.error('❌ Yeni sekme açma hatası:', error);
+            throw error;
+        }
+    }
+    
+    async getPageContent(tabId) {
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => {
+                    return {
+                        text: document.body.innerText,
+                        html: document.documentElement.outerHTML,
+                        title: document.title,
+                        url: window.location.href,
+                        links: Array.from(document.links).map(link => ({
+                            text: link.textContent.trim(),
+                            href: link.href
+                        })).slice(0, 50), // İlk 50 link
+                        images: Array.from(document.images).map(img => ({
+                            src: img.src,
+                            alt: img.alt
+                        })).slice(0, 20) // İlk 20 resim
+                    };
+                }
+            });
+            
+            return results[0].result;
+            
+        } catch (error) {
+            console.error('❌ Sayfa içeriği alma hatası:', error);
+            throw error;
+        }
+    }
+    
+    async injectScript(tabId, script) {
+        try {
+            const results = await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: new Function(script)
+            });
+            
+            return {
+                success: true,
+                result: results[0].result
+            };
+            
+        } catch (error) {
+            console.error('❌ Script enjeksiyon hatası:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+    
+    async saveTaskToHistory(task) {
+        try {
+            const storage = await chrome.storage.local.get(['taskHistory']);
+            const history = storage.taskHistory || [];
+            
+            history.push(task);
+            
+            // Son 100 görevi tut
             if (history.length > 100) {
                 history.splice(0, history.length - 100);
             }
             
-            await chrome.storage.local.set({ automationHistory: history });
+            await chrome.storage.local.set({ taskHistory: history });
+            
         } catch (error) {
-            console.error('Automation result save error:', error);
+            console.error('❌ Görev geçmişi kaydetme hatası:', error);
+        }
+    }
+    
+    async getTaskHistory() {
+        try {
+            const storage = await chrome.storage.local.get(['taskHistory']);
+            return storage.taskHistory || [];
+        } catch (error) {
+            console.error('❌ Görev geçmişi alma hatası:', error);
+            return [];
+        }
+    }
+    
+    showNotification(title, message) {
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon48.png',
+            title: title,
+            message: message
+        });
+    }
+    
+    async onTabUpdated(tabId, tab) {
+        // Sayfa yüklendiğinde otomatik analiz (ayarlarda etkinse)
+        try {
+            const storage = await chrome.storage.local.get(['settings']);
+            const settings = storage.settings || {};
+            
+            if (settings.autoExecute && tab.url && tab.url.startsWith('http')) {
+                console.log('🔄 Otomatik sayfa analizi:', tab.url);
+                // Otomatik analiz burada yapılabilir
+            }
+        } catch (error) {
+            console.error('❌ Tab güncelleme hatası:', error);
+        }
+    }
+    
+    async handleContextMenu(info, tab) {
+        try {
+            switch (info.menuItemId) {
+                case 'analyze-page':
+                    await this.analyzeCurrentPage(tab);
+                    break;
+                case 'extract-data':
+                    await this.executeAutomation('Bu sayfadaki tüm önemli verileri çıkar ve analiz et', tab);
+                    break;
+            }
+        } catch (error) {
+            console.error('❌ Context menu hatası:', error);
         }
     }
     
     handleAlarm(alarm) {
-        switch (alarm.name) {
-            case 'healthCheck':
-                this.checkBackendHealth();
-                break;
-            case 'cleanupStorage':
-                this.cleanupStorage();
-                break;
-        }
-    }
-    
-    async cleanupStorage() {
-        try {
-            const storage = await chrome.storage.local.get(['chatHistory', 'automationHistory']);
-            
-            // Eski kayıtları temizle (30 gün öncesi)
-            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-            
-            if (storage.chatHistory) {
-                const filteredChatHistory = storage.chatHistory.filter(
-                    item => item.timestamp > thirtyDaysAgo
-                );
-                await chrome.storage.local.set({ chatHistory: filteredChatHistory });
-            }
-            
-            if (storage.automationHistory) {
-                const filteredAutomationHistory = storage.automationHistory.filter(
-                    item => item.timestamp > thirtyDaysAgo
-                );
-                await chrome.storage.local.set({ automationHistory: filteredAutomationHistory });
-            }
-        } catch (error) {
-            console.error('Storage cleanup error:', error);
-        }
+        console.log('⏰ Alarm tetiklendi:', alarm.name);
+        // Periyodik görevler burada yapılabilir
     }
 }
 
 // Background script başlat
-new AutomationBackground();
+const operaAIAgent = new OperaAIAgent();
 
-// Periyodik görevleri ayarla
-chrome.alarms.create('healthCheck', { periodInMinutes: 0.1 }); // Her 6 saniyede bir
-chrome.alarms.create('cleanupStorage', { periodInMinutes: 60 * 24 }); // Günlük
-
-
+console.log('🚀 Opera AI Agent Background Script başlatıldı');
 

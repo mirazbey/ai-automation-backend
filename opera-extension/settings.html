@@ -3,106 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayarlar - Fırsat Avcısı</title>
+    <title>Opera AI Agent - Ayarlar</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            width: 400px;
-            padding: 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            min-height: 100vh;
+            padding: 20px;
         }
-        h1 {
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header {
             text-align: center;
-            color: white;
             margin-bottom: 30px;
         }
-        .setting-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 15px;
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 15px;
         }
-        .setting-item label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
         }
-        .setting-item input[type="text"],
-        .setting-item input[type="number"] {
-            width: calc(100% - 20px);
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
+        
+        .checkbox-label {
             font-size: 14px;
+            cursor: pointer;
         }
-        .setting-item input[type="checkbox"] {
-            margin-right: 10px;
+        
+        .form-description {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+            line-height: 1.4;
         }
+        
         .button-group {
-            text-align: center;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
             margin-top: 30px;
         }
-        .button-group button {
-            padding: 12px 25px;
+        
+        .btn {
+            padding: 12px 24px;
             border: none;
-            border-radius: 25px;
-            background: #4CAF50;
-            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-            margin: 0 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .button-group button:hover {
-            background: #45a049;
+        
+        .btn-primary {
+            background: rgba(40, 167, 69, 0.3);
+            color: white;
         }
+        
+        .btn-primary:hover {
+            background: rgba(40, 167, 69, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        
         .status-message {
-            text-align: center;
+            padding: 12px 15px;
+            border-radius: 8px;
             margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
+            font-weight: 500;
+            text-align: center;
             display: none;
         }
+        
         .status-message.success {
-            background-color: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.4);
         }
+        
         .status-message.error {
-            background-color: rgba(244, 67, 54, 0.2);
-            color: #f44336;
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+        }
+        
+        .info-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        
+        .info-text {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: 0.8;
+        }
+        
+        .back-link {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 24px;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-    <h1>Ayarlar</h1>
-
-    <div class="setting-item">
-        <label for="apiUrl">Backend API URL:</label>
-        <input type="text" id="apiUrl" value="http://localhost:5000/api/automation">
+    <a href="#" class="back-link" onclick="window.close()">← Geri</a>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎯 Opera AI Agent</div>
+            <div class="subtitle">Ayarlar ve Yapılandırma</div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🔗 Backend Bağlantısı</div>
+            
+            <div class="form-group">
+                <label class="form-label" for="apiUrl">Backend API URL'si</label>
+                <input type="text" id="apiUrl" class="form-input" placeholder="http://127.0.0.1:5000/api/automation">
+                <div class="form-description">
+                    Backend servisinin çalıştığı URL adresi. Varsayılan: http://127.0.0.1:5000/api/automation
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-title">ℹ️ Backend Kurulumu</div>
+                <div class="info-text">
+                    Backend servisini başlatmak için terminal'de şu komutları çalıştırın:<br>
+                    <code>cd ai-automation-backend</code><br>
+                    <code>python src/main.py</code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🤖 Otomasyon Ayarları</div>
+            
+            <div class="form-checkbox">
+                <input type="checkbox" id="autoExecute" class="checkbox">
+                <label class="checkbox-label" for="autoExecute">Otomatik Görev Çalıştırma</label>
+            </div>
+            <div class="form-description">
+                Etkinleştirildiğinde, bazı görevler kullanıcı onayı olmadan otomatik olarak çalıştırılır.
+            </div>
+            
+            <div class="form-checkbox">
+                <input type="checkbox" id="notifications" class="checkbox">
+                <label class="checkbox-label" for="notifications">Bildirimler</label>
+            </div>
+            <div class="form-description">
+                Görev tamamlandığında veya hata oluştuğunda bildirim göster.
+            </div>
+            
+            <div class="form-checkbox">
+                <input type="checkbox" id="displayHighlights" class="checkbox">
+                <label class="checkbox-label" for="displayHighlights">Element Vurgulaması</label>
+            </div>
+            <div class="form-description">
+                AI'ın etkileşim kurduğu sayfa elementlerini vurgula.
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">⚡ Performans Ayarları</div>
+            
+            <div class="form-group">
+                <label class="form-label" for="maxRetries">Maksimum Yeniden Deneme</label>
+                <input type="number" id="maxRetries" class="form-input" min="1" max="10" value="3">
+                <div class="form-description">
+                    Bir işlem başarısız olduğunda kaç kez yeniden denenecek.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="timeout">Zaman Aşımı (saniye)</label>
+                <input type="number" id="timeout" class="form-input" min="5" max="120" value="30">
+                <div class="form-description">
+                    Bir işlemin tamamlanması için beklenecek maksimum süre.
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🎨 Arayüz Ayarları</div>
+            
+            <div class="form-group">
+                <label class="form-label" for="theme">Tema</label>
+                <select id="theme" class="form-input">
+                    <option value="dark">Koyu Tema</option>
+                    <option value="light">Açık Tema</option>
+                    <option value="auto">Otomatik</option>
+                </select>
+                <div class="form-description">
+                    Eklenti arayüzünün görünümü.
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">🔧 Gelişmiş Ayarlar</div>
+            
+            <div class="form-checkbox">
+                <input type="checkbox" id="debugMode" class="checkbox">
+                <label class="checkbox-label" for="debugMode">Hata Ayıklama Modu</label>
+            </div>
+            <div class="form-description">
+                Detaylı log kayıtları ve hata ayıklama bilgileri göster.
+            </div>
+            
+            <div class="form-checkbox">
+                <input type="checkbox" id="saveHistory" class="checkbox" checked>
+                <label class="checkbox-label" for="saveHistory">Geçmiş Kaydet</label>
+            </div>
+            <div class="form-description">
+                Görev geçmişini yerel olarak kaydet.
+            </div>
+            
+            <div class="info-box">
+                <div class="info-title">⚠️ Gizlilik Notu</div>
+                <div class="info-text">
+                    Tüm veriler yerel olarak saklanır. Hiçbir kişisel bilgi harici sunuculara gönderilmez.
+                    Sadece AI komutları ve sonuçları Gemini API'sine gönderilir.
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="saveSettings" class="btn btn-primary">💾 Ayarları Kaydet</button>
+            <button id="resetSettings" class="btn btn-secondary">🔄 Varsayılanlara Sıfırla</button>
+        </div>
+        
+        <div id="statusMessage" class="status-message"></div>
     </div>
-
-    <div class="setting-item">
-        <label for="autoExecute">Otomatik Görev Çalıştırma:</label>
-        <input type="checkbox" id="autoExecute">
-        <span>(Komut analizinden sonra otomatik çalıştır)</span>
-    </div>
-
-    <div class="setting-item">
-        <label for="notifications">Bildirimleri Göster:</label>
-        <input type="checkbox" id="notifications" checked>
-        <span>(Görev tamamlandığında bildirim göster)</span>
-    </div>
-
-    <div class="button-group">
-        <button id="saveSettings">Ayarları Kaydet</button>
-        <button id="resetSettings">Varsayılanlara Sıfırla</button>
-    </div>
-
-    <div id="statusMessage" class="status-message"></div>
-
+    
     <script src="settings.js"></script>
 </body>
 </html>

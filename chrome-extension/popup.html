@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fırsat Avcısı</title>
+    <style>
+        body {
+            width: 300px;
+            height: 500px;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', 'Tahoma', 'Geneva', 'Verdana', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status.healthy {
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+        }
+        
+        .status.loading {
+            background: rgba(255, 193, 7, 0.2);
+        }
+        
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .quick-actions h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .action-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Kontrol Paneli Stilleri */
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .control-panel.active {
+            display: block;
+        }
+        
+        .control-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 400;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-panel {
+            background: rgba(244, 67, 54, 0.3);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .results-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 100px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-item {
+            margin-bottom: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            border-left: 3px solid rgba(76, 175, 80, 0.6);
+        }
+        
+        .result-item.error {
+            border-left-color: rgba(244, 67, 54, 0.6);
+        }
+        
+        .result-item.info {
+            border-left-color: rgba(33, 150, 243, 0.6);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-family: inherit;
+        }
+        
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        
+        .footer button {
+            background: none;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            margin: 0 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .footer button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .clear-results {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+        
+        .clear-results:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Fırsat Avcısı</h1>
+    </div>
+    
+    <div id="status" class="status">
+        <div id="statusText">Durum kontrol ediliyor...</div>
+    </div>
+    
+    <div class="quick-actions">
+        <h3>Hızlı İşlemler</h3>
+        <button class="action-btn" id="openSidebar">📋 Kontrol Panelini Aç</button>
+        <button class="action-btn" id="currentPageAnalyze">🔍 Bu Sayfayı Analiz Et</button>
+        <button class="action-btn" id="quickSearch">🔎 Hızlı Arama</button>
+        <button class="action-btn" id="automate">🤖 Otomasyon Başlat</button>
+    </div>
+    
+    <!-- Kontrol Paneli -->
+    <div id="controlPanel" class="control-panel">
+        <h3>
+            🎛️ Kontrol Paneli
+            <button class="close-panel" id="closePanel">×</button>
+        </h3>
+        
+        <input type="text" id="searchInput" class="search-input" placeholder="Arama terimi veya komut girin...">
+        
+        <div class="results-area" id="resultsArea">
+            <div style="text-align: center; opacity: 0.6; margin-top: 30px;">
+                Sonuçlar burada görünecek...
+            </div>
+        </div>
+        
+        <button class="clear-results" id="clearResults">🗑️ Temizle</button>
+    </div>
+    
+    <div class="footer">
+        <button id="settings">⚙️ Ayarlar</button>
+        <button id="help">❓ Yardım</button>
+        <button id="about">ℹ️ Hakkında</button>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
+
